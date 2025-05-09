@@ -1,0 +1,18 @@
+/* Custom styles to enhance Tailwind */
+#messages-area {
+    display: flex;
+    flex-direction: column;
+}
+
+#messages-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+#messages-area::-webkit-scrollbar-thumb {
+    background-color: #c1c1c1;
+    border-radius: 4px;
+}
+
+#messages-area::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}

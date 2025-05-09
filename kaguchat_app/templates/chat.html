@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col">
+    <!-- Header -->
+    <div class="bg-green-600 text-white p-4 flex items-center justify-between">
+        <h1 class="text-2xl font-bold">KaguChat</h1>
+        <div class="flex items-center space-x-3">
+            <a href="{{ url_for('manage_table', table_name='users', sid=sid) }}" class="bg-blue-500 px-3 py-1 rounded-lg hover:bg-blue-600 transition duration-200">Admin Panel</a>
+            <span>{{ username }}</span>
+            <a href="{{ url_for('logout', sid=sid) }}" class="bg-red-500 px-3 py-1 rounded-lg hover:bg-red-600 transition duration-200">Logout</a>
+        </div>
+    </div>
+    <!-- Main Content -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Contact List -->
+        <div class="w-1/4 bg-white border-r border-gray-200 overflow-y-auto">
+            {% for contact in contacts %}
+                <a href="{{ url_for('chat', contact_id=contact.contact_id, contact_type=contact.type, sid=sid) }}" 
+                   class="{% if contact.contact_id|string == selected_contact_id and contact.type == selected_contact_type %}bg-gray-200{% endif %} flex items-center p-3 border-b border-gray-200 hover:bg-gray-100">
+                    <img src="{{ contact.avatar_url or 'https://via.placeholder.com/40' }}" alt="{{ contact.name }}" class="w-10 h-10 rounded-full mr-3">
+                    <div class="flex-1">
+                        <div class="flex justify-between">
+                            <h3 class="text-lg font-semibold">{{ contact.name }}</h3>
+                            <span class="text-sm text-gray-500">{{ contact.last_message_time }}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 truncate">{{ contact.last_message }}</p>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+        <!-- Chat Window -->
+        <div class="flex-1 flex flex-col">
+            {% if selected_contact_id and selected_contact_type %}
+                <!-- Chat Header -->
+                <div class="bg-green-500 text-white p-4 flex items-center border-b border-gray-200">
+                    {% set selected_contact = contacts | selectattr('contact_id', 'equalto', selected_contact_id | int) | first %}
+                    <img src="{{ selected_contact.avatar_url or 'https://via.placeholder.com/40' }}" alt="{{ selected_contact.name }}" class="w-10 h-10 rounded-full mr-3">
+                    <h2 class="text-lg font-semibold">{{ selected_contact.name }}</h2>
+                </div>
+                <!-- Messages Area -->
+                <div id="messages-area" class="flex-1 p-4 overflow-y-auto bg-gray-50">
+                    {% for message in messages %}
+                        <div class="flex {% if message.is_self %}justify-end{% else %}justify-start{% endif %} mb-4">
+                            <div class="max-w-xs p-3 rounded-lg {% if message.is_self %}bg-green-500 text-white{% else %}bg-gray-200 text-gray-800{% endif %}">
+                                <p>{{ message.content }}</p>
+                                <span class="text-xs opacity-75 mt-1 block">{{ message.sent_at }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <!-- Input Area -->
+                <form method="POST" class="p-4 bg-white border-t border-gray-200 flex items-center">
+                    <input type="text" name="message_content" id="message-input" class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Type a message..." required>
+                    <button type="submit" class="ml-3 bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition duration-200">Send</button>
+                </form>
+            {% else %}
+                <div class="flex-1 flex items-center justify-center text-gray-500">Select a contact to start chatting</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Manage {{ table_name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-3xl font-bold">Manage {{ table_name }}</h1>
+        <div class="flex space-x-3">
+            <!-- 表选择导航 -->
+            <select onchange="window.location.href='/admin/' + this.value" class="p-2 border rounded-lg">
+                <option value="users" {% if table_name.lower() == 'users' %}selected{% endif %}>Users</option>
+                <option value="friends" {% if table_name.lower() == 'friends' %}selected{% endif %}>Friends</option>
+                <option value="groups" {% if table_name.lower() == 'groups' %}selected{% endif %}>Groups</option>
+                <option value="group_members" {% if table_name.lower() == 'group_members' %}selected{% endif %}>Group Members</option>
+                <option value="messages" {% if table_name.lower() == 'messages' %}selected{% endif %}>Messages</option>
+                <option value="message_attachments" {% if table_name.lower() == 'message_attachments' %}selected{% endif %}>Message Attachments</option>
+            </select>
+            <a href="{{ url_for('chat') }}" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-200">Back to Chat</a>
+        </div>
+    </div>
+
+    <!-- 错误提示 -->
+    {% if error_message %}
+        <div class="alert alert-danger mb-4 text-red-600 text-center">{{ error_message }}</div>
+    {% endif %}
+
+    <!-- 调试信息 -->
+    <p class="text-gray-600">Debug: Table Name = {{ table_name }}</p>
+
+    <!-- 表数据 -->
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Records</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        {% for col in columns %}
+                            <th>{{ col }}</th>
+                        {% endfor %}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                        <tr>
+                            {% for value in row %}
+                                <td>{{ value }}</td>
+                            {% endfor %}
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editRow('{{ row[columns.index(primary_key)] }}')">Edit</button>
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="record_id" value="{{ row[columns.index(primary_key)] }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <!-- 编辑表单（隐藏） -->
+                        <tr id="edit_{{ row[columns.index(primary_key)] }}" style="display:none;">
+                            <form method="POST" onsubmit="return validateEditForm('{{ table_name }}', '{{ row[columns.index(primary_key)] }}')">
+                                <input type="hidden" name="action" value="edit">
+                                <input type="hidden" name="record_id" value="{{ row[columns.index(primary_key)] }}">
+                                {% set auto_datetime_fields = {
+                                    "users": "created_at",
+                                    "friends": "created_at",
+                                    "groups": "created_at",
+                                    "group_members": "join_at",
+                                    "messages": "sent_at",
+                                    "message_attachments": "uploaded_at"
+                                } %}
+                                {% for col in columns %}
+                                    <td>
+                                        {% if col != primary_key and col != auto_datetime_fields.get(table_name.lower()) %}
+                                            {% if table_name.lower() == "users" and col == "phone" %}
+                                                <input type="text" class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}" value="{{ row[columns.index(col)] if row[columns.index(col)] else '' }}" pattern="[0-9]{11}" required>
+                                            {% elif table_name.lower() == "users" and (col == "username" or col == "password") %}
+                                                <input type="text" class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}" value="{{ row[columns.index(col)] if row[columns.index(col)] else '' }}" required>
+                                            {% elif table_name.lower() == "friends" and col == "status" %}
+                                                <select class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}">
+                                                    <option value="0" {% if row[columns.index(col)] == 0 %}selected{% endif %}>0</option>
+                                                    <option value="1" {% if row[columns.index(col)] == 1 %}selected{% endif %}>1</option>
+                                                </select>
+                                            {% elif table_name.lower() == "group_members" and col == "role" %}
+                                                <select class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}">
+                                                    <option value="0" {% if row[columns.index(col)] == 0 %}selected{% endif %}>0</option>
+                                                    <option value="1" {% if row[columns.index(col)] == 1 %}selected{% endif %}>1</option>
+                                                    <option value="2" {% if row[columns.index(col)] == 2 %}selected{% endif %}>2</option>
+                                                </select>
+                                            {% elif table_name.lower() == "messages" and col == "message_type" %}
+                                                <select class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}">
+                                                    <option value="0" {% if row[columns.index(col)] == 0 %}selected{% endif %}>0</option>
+                                                    <option value="1" {% if row[columns.index(col)] == 1 %}selected{% endif %}>1</option>
+                                                    <option value="2" {% if row[columns.index(col)] == 2 %}selected{% endif %}>2</option>
+                                                </select>
+                                            {% elif table_name.lower() == "messages" and (col == "receiver_id" or col == "group_id") %}
+                                                <input type="text" class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}" value="{{ row[columns.index(col)] if row[columns.index(col)] else '' }}" id="{{ col }}_{{ row[columns.index(primary_key)] }}">
+                                            {% elif table_name.lower() == "message_attachments" and col == "file_type" %}
+                                                <select class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}">
+                                                    <option value="" {% if not row[columns.index(col)] %}selected{% endif %}>NULL</option>
+                                                    <option value="image" {% if row[columns.index(col)] == 'image' %}selected{% endif %}>image</option>
+                                                    <option value="file" {% if row[columns.index(col)] == 'file' %}selected{% endif %}>file</option>
+                                                </select>
+                                            {% else %}
+                                                <input type="text" class="form-control" name="{{ col }}_{{ row[columns.index(primary_key)] }}" value="{{ row[columns.index(col)] if row[columns.index(col)] else '' }}">
+                                            {% endif %}
+                                        {% else %}
+                                            {{ row[columns.index(col)] }}
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                                <td>
+                                    <button type="submit" class="btn btn-sm btn-success">Save</button>
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit('{{ row[columns.index(primary_key)] }}')">Cancel</button>
+                                </td>
+                            </form>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 添加新记录 -->
+    <div class="card shadow">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Add New Record</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" onsubmit="return validateAddForm('{{ table_name }}')">
+                <input type="hidden" name="action" value="add">
+                <div class="row">
+                    {% set auto_datetime_fields = {
+                        "users": "created_at",
+                        "friends": "created_at",
+                        "groups": "created_at",
+                        "group_members": "join_at",
+                        "messages": "sent_at",
+                        "message_attachments": "uploaded_at"
+                    } %}
+                    {% for col in columns %}
+                        {% if col != primary_key and col != auto_datetime_fields.get(table_name.lower()) %}
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">{{ col }}</label>
+                                {% if table_name.lower() == "users" and col == "phone" %}
+                                    <input type="text" class="form-control" name="{{ col }}" id="{{ col }}" pattern="[0-9]{11}" placeholder="11 digits (e.g., 12345678901)" required>
+                                {% elif table_name.lower() == "users" and (col == "username" or col == "password") %}
+                                    <input type="text" class="form-control" name="{{ col }}" id="{{ col }}" placeholder="{{ col }}" required>
+                                {% elif table_name.lower() == "friends" and col == "status" %}
+                                    <select class="form-control" name="{{ col }}" id="{{ col }}">
+                                        <option value="0">0</option>
+                                        <option value="1" selected>1</option>
+                                    </select>
+                                {% elif table_name.lower() == "group_members" and col == "role" %}
+                                    <select class="form-control" name="{{ col }}" id="{{ col }}">
+                                        <option value="0" selected>0</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                    </select>
+                                {% elif table_name.lower() == "messages" and col == "message_type" %}
+                                    <select class="form-control" name="{{ col }}" id="{{ col }}">
+                                        <option value="0" selected>0</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                    </select>
+                                {% elif table_name.lower() == "messages" and (col == "receiver_id" or col == "group_id") %}
+                                    <input type="text" class="form-control" name="{{ col }}" id="{{ col }}" placeholder="{{ col }} (only one of Receiver ID or Group ID should be filled)">
+                                {% elif table_name.lower() == "message_attachments" and col == "file_type" %}
+                                    <select class="form-control" name="{{ col }}" id="{{ col }}">
+                                        <option value="" selected>NULL</option>
+                                        <option value="image">image</option>
+                                        <option value="file">file</option>
+                                    </select>
+                                {% else %}
+                                    <input type="text" class="form-control" name="{{ col }}" id="{{ col }}" placeholder="{{ col }}">
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-success">Add Record</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript 验证 -->
+<script>
+function validateAddForm(tableName) {
+    let errorMessage = document.getElementById("error-message");
+    if (errorMessage) {
+        errorMessage.style.display = "none";
+        errorMessage.innerText = "";
+    }
+
+    if (tableName.toLowerCase() === "messages") {
+        let receiverId = document.getElementById("receiver_id").value.trim();
+        let groupId = document.getElementById("group_id").value.trim();
+        if (!receiverId && !groupId) {
+            alert("Either Receiver ID or Group ID must be provided");
+            return false;
+        }
+        if (receiverId && groupId) {
+            alert("Receiver ID and Group ID cannot both be provided; one must be empty");
+            return false;
+        }
+    }
+    return true;
+}
+
+function validateEditForm(tableName, recordId) {
+    let errorMessage = document.getElementById("error-message");
+    if (errorMessage) {
+        errorMessage.style.display = "none";
+        errorMessage.innerText = "";
+    }
+
+    if (tableName.toLowerCase() === "messages") {
+        let receiverId = document.getElementById("receiver_id_" + recordId).value.trim();
+        let groupId = document.getElementById("group_id_" + recordId).value.trim();
+        if (!receiverId && !groupId) {
+            alert("Either Receiver ID or Group ID must be provided");
+            return false;
+        }
+        if (receiverId && groupId) {
+            alert("Receiver ID and Group ID cannot both be provided; one must be empty");
+            return false;
+        }
+    }
+    return true;
+}
+
+function editRow(recordId) {
+    document.querySelectorAll('tr[id^="edit_"]').forEach(row => row.style.display = 'none');
+    document.getElementById('edit_' + recordId).style.display = '';
+}
+
+function cancelEdit(recordId) {
+    document.getElementById('edit_' + recordId).style.display = 'none';
+}
+</script>
+{% endblock %}
