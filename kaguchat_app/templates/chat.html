@@ -8,9 +8,9 @@
     <div class="bg-green-600 text-white p-4 flex items-center justify-between">
         <h1 class="text-2xl font-bold">KaguChat</h1>
         <div class="flex items-center space-x-3">
-            <a href="{{ url_for('manage_table', table_name='users', sid=sid) }}" class="bg-blue-500 px-3 py-1 rounded-lg hover:bg-blue-600 transition duration-200">Admin Panel</a>
+            <a href="{{ url_for('admin_bp.admin_dashboard', sid=sid) }}" class="bg-blue-500 px-3 py-1 rounded-lg hover:bg-blue-600 transition duration-200">Admin Panel</a>
             <span>{{ username }}</span>
-            <a href="{{ url_for('logout', sid=sid) }}" class="bg-red-500 px-3 py-1 rounded-lg hover:bg-red-600 transition duration-200">Logout</a>
+            <a href="{{ url_for('auth_bp.logout', sid=sid) }}" class="bg-red-500 px-3 py-1 rounded-lg hover:bg-red-600 transition duration-200">Logout</a>
         </div>
     </div>
     <!-- Main Content -->
@@ -18,7 +18,7 @@
         <!-- Contact List -->
         <div class="w-1/4 bg-white border-r border-gray-200 overflow-y-auto">
             {% for contact in contacts %}
-                <a href="{{ url_for('chat', contact_id=contact.contact_id, contact_type=contact.type, sid=sid) }}" 
+                <a href="{{ url_for('chat_bp.chat_interface', contact_id=contact.contact_id, contact_type=contact.type, sid=sid) }}" 
                    class="{% if contact.contact_id|string == selected_contact_id and contact.type == selected_contact_type %}bg-gray-200{% endif %} flex items-center p-3 border-b border-gray-200 hover:bg-gray-100">
                     <img src="{{ contact.avatar_url or 'https://via.placeholder.com/40' }}" alt="{{ contact.name }}" class="w-10 h-10 rounded-full mr-3">
                     <div class="flex-1">

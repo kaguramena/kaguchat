@@ -1,0 +1,42 @@
+{% extends "admin/admin_base.html" %}
+
+{% block admin_title %}Admin Dashboard - KaguChat{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Welcome to KaguChat Admin Panel</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">This is the central place to manage your application's data.</p>
+                    <p>Please select a table from the sidebar to view, add, edit, or delete records.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+             <h4 class="mb-3">Quick Access</h4>
+        </div>
+        {% for table_key, table_display_name in config.TABLE_NAME_MAPPING_FOR_ADMIN.items() %}
+        <div class="col-md-4 col-lg-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-table fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">{{ table_display_name }}</h5>
+                    <a href="{{ url_for('admin_bp.manage_table', table_name_display=table_key, sid=session.get('session_id')) }}" class="btn btn-outline-primary btn-sm">
+                        Manage {{ table_display_name }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

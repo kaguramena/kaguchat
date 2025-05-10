@@ -5,6 +5,7 @@ import uuid
 from .config import current_config # 使用 . 从当前包导入
 from .extensions import socketio, session_ext, chat_service, table_service, logger as ext_logger
 from .socket_events import register_socketio_events
+from .processors import get_table_processor as get_processor_func
 
 def create_app(config_object=current_config):
     app = Flask(__name__)
@@ -43,6 +44,16 @@ def create_app(config_object=current_config):
                  response.set_cookie('session_id', flask_session['session_id'], max_age=3600, samesite='Lax')
                  ext_logger.debug(f"Set session_id cookie in after_request: {flask_session['session_id']}")
         return response
+    
+    @app.context_processor
+    def inject_utilities():
+        # 这个函数会在每个请求的模板渲染之前执行
+        # 它返回一个字典，字典中的键值对会成为模板中的全局变量
+        # 'get_processor' 是模板中使用的名字
+        # get_processor_func 是我们导入的实际 Python 函数
+        # 'config' 变量指向 app.config 对象
+        # app.logger.debug("Injecting utilities: get_processor and config into template context.") # 调试日志
+        return dict(get_processor=get_processor_func, config=app.config)
 
 
     # 注册蓝图

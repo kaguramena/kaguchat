@@ -1,171 +1,80 @@
-import re
-import logging
-from data.db_access import DatabaseAccess
-
-# 配置日志
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+from ..data.db_access import DatabaseAccess
 
 class TableService:
     def __init__(self):
         self.db_access = DatabaseAccess()
 
-    def get_table_columns(self, table_name):
-        query = f"DESCRIBE `{table_name}`"
-        columns_data = self.db_access.execute_query(query)
-        return [col[0] for col in columns_data]
+    def get_table_columns(self, table_name_actual):
+        return self.db_access.get_table_columns(table_name_actual)
 
-    def get_primary_key(self, table_name):
-        query = f"SHOW KEYS FROM `{table_name}` WHERE Key_name = 'PRIMARY'"
-        keys_data = self.db_access.execute_query(query)
-        columns = self.get_table_columns(table_name)
-        return keys_data[0][4] if keys_data else columns[0]
+    def get_primary_key(self, table_name_actual):
+        return self.db_access.get_primary_key(table_name_actual)
 
-    def get_table_data(self, table_name):
-        query = f"SELECT * FROM `{table_name}`"
-        return self.db_access.execute_query(query)
+    def get_table_data(self, table_name_actual):
+        return self.db_access.get_table_data(table_name_actual)
 
-    def add_record(self, table_name, values):
-        logger.debug(f"Table Name: {table_name}")
-        logger.debug(f"Values before processing: {values}")
+    def add_record(self, table_name_actual, values_dict):
+        # values_dict 是 {column_name: value}
+        # 需要将其转换为适合 db_access.execute_update 的格式
+        columns = list(values_dict.keys())
+        placeholders = ', '.join(['%s'] * len(columns))
+        sql_columns = ', '.join(columns)
+        query = f"INSERT INTO {table_name_actual} ({sql_columns}) VALUES ({placeholders})"
+        params = tuple(values_dict.values())
+        return self.db_access.execute_update(query, params, fetch_id=True) # 假设返回ID
 
-        auto_datetime_fields = {
-            "users": "created_at",
-            "friends": "created_at",
-            "groups": "created_at",
-            "group_members": "join_at",
-            "messages": "sent_at",
-            "message_attachments": "uploaded_at"
-        }
-        datetime_field = auto_datetime_fields.get(table_name.lower())
-        if datetime_field and datetime_field in values:
-            values.pop(datetime_field)
+    def update_record(self, table_name_actual, primary_key_column, record_id, values_dict):
+        if not values_dict:
+            return True # 没有要更新的
+        set_clauses = [f"{col} = %s" for col in values_dict.keys()]
+        query = f"UPDATE {table_name_actual} SET {', '.join(set_clauses)} WHERE {primary_key_column} = %s"
+        params = tuple(list(values_dict.values()) + [record_id])
+        return self.db_access.execute_update(query, params)
 
-        if table_name.lower() == "messages":
-            if "receiver_id" in values and (values["receiver_id"] == "" or values["receiver_id"].isspace()):
-                values["receiver_id"] = None
-            if "group_id" in values and (values["group_id"] == "" or values["group_id"].isspace()):
-                values["group_id"] = None
+    def delete_record(self, table_name_actual, primary_key_column, record_id):
+        query = f"DELETE FROM {table_name_actual} WHERE {primary_key_column} = %s"
+        return self.db_access.execute_update(query, (record_id,))
 
-            receiver_id = values.get("receiver_id")
-            group_id = values.get("group_id")
-            if receiver_id is None and group_id is None:
-                raise ValueError("Either Receiver ID or Group ID must be provided")
-            if receiver_id is not None and group_id is not None:
-                raise ValueError("Receiver ID and Group ID cannot both be provided; one must be empty")
+    def record_exists(self, table_name_actual, conditions_dict):
+        """
+        检查满足条件的记录是否存在。
+        conditions_dict: {'column_name': value, 'column_name2 !=': value2}
+        """
+        if not conditions_dict:
+            return False
+        clauses = []
+        params = []
+        for col, val in conditions_dict.items():
+            operator = "=" # 默认操作符
+            column_name = col
+            if col.endswith(" !="):
+                operator = "!="
+                column_name = col[:-3].strip()
+            elif col.endswith(" >"):
+                operator = ">"
+                column_name = col[:-2].strip()
+            # ...可以添加更多操作符支持
+            clauses.append(f"{column_name} {operator} %s")
+            params.append(val)
 
-        logger.debug(f"Values after processing: {values}")
+        query = f"SELECT COUNT(1) AS count_exists FROM {table_name_actual} WHERE {' AND '.join(clauses)}"
+        result = self.db_access.execute_query(query, tuple(params))
+        return result[0]['count_exists'] > 0 if result and result[0] else False
 
-        if table_name.lower() == "users":
-            if "phone" in values and values["phone"]:
-                if not re.match(r"^[0-9]{11}$", values["phone"]):
-                    raise ValueError("Phone must be exactly 11 digits (e.g., 12345678901)")
-            for col in ["username", "password"]:
-                if col in values and not values[col]:
-                    raise ValueError(f"{col} is required")
+    def get_record_by_primary_key(self, table_name_actual, primary_key_column, record_id):
+        """根据主键获取单条记录，返回字典形式。"""
+        query = f"SELECT * FROM {table_name_actual} WHERE {primary_key_column} = %s"
+        result_rows = self.db_access.execute_query(query, (record_id,))
+        if result_rows:
+            columns = self.get_table_columns(table_name_actual)
+            return dict(zip(columns, result_rows[0]))
+        return None
 
-        elif table_name.lower() == "friends":
-            if "status" in values and values["status"] not in ["0", "1"]:
-                raise ValueError("Status must be 0 or 1")
-
-        elif table_name.lower() == "groups":
-            if "group_name" in values and not values["group_name"]:
-                raise ValueError("Group Name is required")
-
-        elif table_name.lower() == "group_members":
-            if "role" in values and values["role"] not in ["0", "1", "2"]:
-                raise ValueError("Role must be 0, 1, or 2")
-
-        elif table_name.lower() == "messages":
-            if "message_type" in values and values["message_type"] not in ["0", "1", "2"]:
-                raise ValueError("Message Type must be 0, 1, or 2")
-            if "content" in values and not values["content"]:
-                raise ValueError("Content is required")
-
-        elif table_name.lower() == "message_attachments":
-            if "file_type" in values and values["file_type"] and values["file_type"] not in ["image", "file"]:
-                raise ValueError("File Type must be 'image', 'file', or empty")
-            if "file_url" in values and not values["file_url"]:
-                raise ValueError("File URL is required")
-
-        columns = [col for col in values.keys()]
-        filtered_columns = [col for col in columns if values[col] is not None]
-        filtered_values = [values[col] for col in columns if values[col] is not None]
-        placeholders = ",".join(["%s"] * len(filtered_columns))
-        query = f"INSERT INTO `{table_name}` ({','.join(filtered_columns)}) VALUES ({placeholders})"
-        logger.debug(f"Generated SQL Query: {query}")
-        self.db_access.execute_update(query, filtered_values)
-
-    def update_record(self, table_name, primary_key, record_id, values):
-        logger.debug(f"Table Name: {table_name}")
-        logger.debug(f"Values before processing: {values}")
-
-        auto_datetime_fields = {
-            "users": "created_at",
-            "friends": "created_at",
-            "groups": "created_at",
-            "group_members": "join_at",
-            "messages": "sent_at",
-            "message_attachments": "uploaded_at"
-        }
-        datetime_field = auto_datetime_fields.get(table_name.lower())
-        if datetime_field and datetime_field in values:
-            values.pop(datetime_field)
-
-        if table_name.lower() == "messages":
-            if "receiver_id" in values and (values["receiver_id"] == "" or values["receiver_id"].isspace()):
-                values["receiver_id"] = None
-            if "group_id" in values and (values["group_id"] == "" or values["group_id"].isspace()):
-                values["group_id"] = None
-
-            receiver_id = values.get("receiver_id")
-            group_id = values.get("group_id")
-            if receiver_id is None and group_id is None:
-                raise ValueError("Either Receiver ID or Group ID must be provided")
-            if receiver_id is not None and group_id is not None:
-                raise ValueError("Receiver ID and Group ID cannot both be provided; one must be empty")
-
-        logger.debug(f"Values after processing: {values}")
-
-        if table_name.lower() == "users":
-            if "phone" in values and values["phone"]:
-                if not re.match(r"^[0-9]{11}$", values["phone"]):
-                    raise ValueError("Phone must be exactly 11 digits (e.g., 12345678901)")
-            for col in ["username", "password"]:
-                if col in values and not values[col]:
-                    raise ValueError(f"{col} is required")
-
-        elif table_name.lower() == "friends":
-            if "status" in values and values["status"] not in ["0", "1"]:
-                raise ValueError("Status must be 0 or 1")
-
-        elif table_name.lower() == "groups":
-            if "group_name" in values and not values["group_name"]:
-                raise ValueError("Group Name is required")
-
-        elif table_name.lower() == "group_members":
-            if "role" in values and values["role"] not in ["0", "1", "2"]:
-                raise ValueError("Role must be 0, 1, or 2")
-
-        elif table_name.lower() == "messages":
-            if "message_type" in values and values["message_type"] not in ["0", "1", "2"]:
-                raise ValueError("Message Type must be 0, 1, or 2")
-            if "content" in values and not values["content"]:
-                raise ValueError("Content is required")
-
-        elif table_name.lower() == "message_attachments":
-            if "file_type" in values and values["file_type"] and values["file_type"] not in ["image", "file"]:
-                raise ValueError("File Type must be 'image', 'file', or empty")
-            if "file_url" in values and not values["file_url"]:
-                raise ValueError("File URL is required")
-
-        filtered_columns = [col for col in values.keys() if values[col] is not None]
-        filtered_values = [values[col] for col in values.keys() if values[col] is not None]
-        set_clause = [f"{col} = %s" for col in filtered_columns]
-        query = f"UPDATE `{table_name}` SET {','.join(set_clause)} WHERE {primary_key} = %s"
-        logger.debug(f"Generated SQL Query: {query}")
-        self.db_access.execute_update(query, filtered_values + [record_id])
-
-    def delete_record(self, table_name, primary_key, record_id):
-        query = f"DELETE FROM `{table_name}` WHERE {primary_key} = %s"
-        self.db_access.execute_update(query, [record_id])
+    def get_record_by_field(self, table_name_actual, field_name, field_value):
+        """根据特定字段和值获取单条记录（假设该字段唯一或取第一条），返回字典。"""
+        query = f"SELECT * FROM {table_name_actual} WHERE {field_name} = %s LIMIT 1"
+        result_rows = self.db_access.execute_query(query, (field_value,))
+        if result_rows:
+            columns = self.get_table_columns(table_name_actual)
+            return dict(zip(columns, result_rows[0]))
+        return None

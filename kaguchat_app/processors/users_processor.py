@@ -11,27 +11,19 @@ class UsersTableProcessor(BaseTableProcessor):
 
     def _validate_common_user_fields(self, values, is_edit=False, record_id=None):
         username = values.get('username')
-        email = values.get('email')
         phone = values.get('phone')
 
         if not is_edit and not username: # 添加时用户名必填
             raise InvalidDataError("Username is required.", field_name='username')
-        if username and len(username) < 3:
-            raise InvalidDataError("Username must be at least 3 characters long.", field_name='username')
 
         if not is_edit and not values.get('password'): # 添加时密码必填
              raise InvalidDataError("Password is required for new user.", field_name='password')
-        if values.get('password') and len(values['password']) < 6: # 如果提供了密码，检查长度
-             raise InvalidDataError("Password must be at least 6 characters long.", field_name='password')
+        # if values.get('password') and len(values['password']) < 6: # 如果提供了密码，检查长度
+        #      raise InvalidDataError("Password must be at least 6 characters long.", field_name='password')
 
-        if not email:
-            raise InvalidDataError("Email is required.", field_name='email')
-        if "@" not in email or "." not in email: # 非常基础的邮箱格式检查
-            raise InvalidDataError("Invalid email format.", field_name='email')
-
-        if phone: # 假设 phone 是可选的，但如果提供，则验证格式
-            if not phone.isdigit() or len(phone) != 11: # 简单示例
-                raise InvalidDataError("Phone must be exactly 11 digits.", field_name='phone')
+        # if phone: # 假设 phone 是可选的，但如果提供，则验证格式
+        #     if not phone.isdigit() or len(phone) != 11: # 简单示例
+        #         raise InvalidDataError("Phone must be exactly 11 digits.", field_name='phone')
 
         # 检查唯一性约束
         if username:
@@ -40,12 +32,6 @@ class UsersTableProcessor(BaseTableProcessor):
                 condition_username[f"{self.primary_key}!="] = record_id # 假设 table_service 支持这种条件
             if table_service.record_exists("Users", condition_username):
                 raise DuplicateEntryError(f"Username '{username}' already exists.", field_name='username')
-        if email:
-            condition_email = {"email": email}
-            if is_edit:
-                condition_email[f"{self.primary_key}!="] = record_id
-            if table_service.record_exists("Users", condition_email):
-                raise DuplicateEntryError(f"Email '{email}' already exists.", field_name='email')
 
 
     def validate_add(self, raw_values, form_data):

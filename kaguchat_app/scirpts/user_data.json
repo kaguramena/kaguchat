@@ -1,0 +1,9 @@
+[
+  {
+    "username": "alice_Wonder",
+    "email": "alice@example.com",
+    "password": "wonderlandSecurePassword1!",
+    "phone": "11122233301",
+    "avatar_url": "https://example.com/avatars/alice.png"
+  }
+]

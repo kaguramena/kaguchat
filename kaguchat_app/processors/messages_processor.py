@@ -13,6 +13,10 @@ class MessagesTableProcessor(BaseTableProcessor):
         sender_id = raw_values.get('sender_id')
         receiver_id = raw_values.get('receiver_id')
         group_id = raw_values.get('group_id')
+        message_type = raw_values.get('message_type') # 可能是文本、图片等类型
+
+        if not (message_type in [0, 1, 2]): # 假设 0 是文本，1 是图片，2 是其他类型
+            raise InvalidDataError("Invalid message type.", field_name='message_type')
 
         if not content:
             raise InvalidDataError("Message content cannot be empty.", field_name='content')

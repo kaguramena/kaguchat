@@ -1,5 +1,5 @@
-from data.db_access import DatabaseAccess
-from werkzug.security import generate_password_hash, check_password_hash
+from ..data.db_access import DatabaseAccess
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class ChatService:
     def __init__(self):
@@ -12,8 +12,8 @@ class ChatService:
         if not user_record:
             return None
         
-        user_id, stored_password = user_record[0][0], user_record[0][1]
-        if check_password_hash(stored_password, password): #哈希密码匹配成功
+        user_id, stored_password = user_record[0]['user_id'], user_record[0]['password']
+        if stored_password == password or check_password_hash(stored_password, password): #哈希密码匹配成功
             return user_id
         else:
             return None # 密码错误

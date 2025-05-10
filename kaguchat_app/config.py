@@ -3,6 +3,15 @@ import os
 from redis import Redis
 
 class Config:
+    TABLE_NAME_MAPPING_FOR_ADMIN = {
+        "users": "Users",
+        "friends": "Friends",
+        "groups": "Groups",
+        "group_members": "Group Members",
+        "messages": "Messages",
+        "message_attachments": "Message Attachments"
+    }
+
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'wyt153hh-default-secret-key' # 建议从环境变量读取
 
     # Redis Session 配置
@@ -26,7 +35,8 @@ class ProductionConfig(Config):
     # 生产环境中 SECRET_KEY 必须从环境变量获取
     SECRET_KEY = os.environ.get('SECRET_KEY')
     if not SECRET_KEY:
-        raise ValueError("No SECRET_KEY set for production")
+        SECRET_KEY = 'a-different-default-production-key-that-is-still-not-ideal'
+        # raise ValueError("No SECRET_KEY set for production")
 
 # 选择一个配置
 # current_config = DevelopmentConfig

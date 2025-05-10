@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block admin_title %}KaguChat Admin{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_style.css') }}">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .admin-wrapper {
+            display: flex;
+            flex-grow: 1;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #343a40; /* Dark sidebar */
+            color: #fff;
+            padding-top: 1.5rem;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: #495057;
+        }
+        .sidebar .nav-link .fa {
+            margin-right: 0.5rem;
+        }
+        .content-area {
+            margin-left: 250px; /* Same as sidebar width */
+            padding: 20px;
+            flex-grow: 1;
+            background-color: #f8f9fa;
+        }
+        .navbar-admin {
+            background-color: #fff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.75rem 1rem;
+            margin-left: 250px; /* Offset by sidebar width */
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 250px; /* Important for fixed top navbar with fixed sidebar */
+            z-index: 99;
+        }
+        .main-content-wrapper{
+            margin-top: 60px; /* Adjust based on navbar height */
+        }
+        .breadcrumb-admin {
+            background-color: #e9ecef;
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+        }
+    </style>
+    {% block admin_head_extra %}{% endblock %}
+</head>
+<body>
+    <div class="admin-wrapper">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header text-center mb-3">
+                <a href="{{ url_for('admin_bp.admin_dashboard') }}" class="text-white text-decoration-none">
+                    <h4><i class="fas fa-shield-alt"></i> KaguAdmin</h4>
+                </a>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'admin_bp.admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_bp.admin_dashboard', sid=session.get('session_id')) }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mt-2 mb-1 ms-3 text-muted small text-uppercase">Manage Tables</li>
+                {% for table_key, table_display_name in config.TABLE_NAME_MAPPING_FOR_ADMIN.items() %}
+                <li class="nav-item">
+                    <a class="nav-link {% if table_name == table_key %}active{% endif %}" href="{{ url_for('admin_bp.manage_table', table_name_display=table_key, sid=session.get('session_id')) }}">
+                        <i class="fas fa-table"></i> {{ table_display_name }}
+                    </a>
+                </li>
+                {% endfor %}
+                <li class="nav-item mt-3 border-top pt-2">
+                     <a class="nav-link" href="{{ url_for('chat_bp.chat_interface', sid=session.get('session_id')) }}">
+                        <i class="fas fa-arrow-left"></i> Back to Chat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav_link" href="{{ url_for('auth_bp.logout', sid=session.get('session_id')) }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div id="content" class="content-area">
+            <nav class="navbar navbar-expand-lg navbar-light navbar-admin">
+                <div class="container-fluid">
+                    <h5 class="mb-0">{% block page_title %}Admin Panel{% endblock %}</h5>
+                    <div class="ms-auto">
+                        <span class="navbar-text me-3">
+                            Logged in as: <strong>{{ session.get('username', 'Admin') }}</strong>
+                        </span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="main-content-wrapper">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block admin_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    {% block admin_scripts_extra %}{% endblock %}
+</body>
+</html>

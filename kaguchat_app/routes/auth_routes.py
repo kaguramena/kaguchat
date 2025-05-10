@@ -25,6 +25,7 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        print(f"Login attempt with username: {username}, password: {password}") # 注意：实际应用中不要打印密码
         user_id = chat_service.authenticate_user(username, password)
         if user_id:
             session['user_id'] = user_id
