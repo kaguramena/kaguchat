@@ -1,1 +1,3 @@
-./kaguchat_app/venv-kaguchat/
+kaguchat_app/venv-kaguchat/
+__pycache__/
+*.py[cod]
