@@ -1,4 +1,5 @@
 # kaguchat_app/config.py
+from datetime import timedelta
 import os
 from redis import Redis
 
@@ -21,6 +22,15 @@ class Config:
     SESSION_USE_SIGNER = True
     SESSION_KEY_PREFIX = 'kaguchat:session:' # 可选，但推荐
 
+    # JWT 配置
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'your-jwt-secret-key-for-development' # 必须设置
+    JWT_TOKEN_LOCATION = ['headers', 'cookies'] # (可选) 定义 Token 的位置
+    JWT_COOKIE_SECURE = False # 开发时设为 False, 生产环境HTTPS应为True
+    JWT_COOKIE_SAMESITE = "Lax"
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1) # (可选) Token 过期时间
+    JWT_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'] # <--- 这是关键修改
+    JWT_CSRF_IN_COOKIES = False
+    
     # 其他应用配置可以放在这里
     DEBUG = True # 开发时设为True，生产环境设为False
     LOG_LEVEL = 'DEBUG'

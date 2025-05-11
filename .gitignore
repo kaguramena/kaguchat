@@ -1,3 +1,4 @@
 kaguchat_app/venv-kaguchat/
 __pycache__/
 *.py[cod]
+frontend/node_modules/

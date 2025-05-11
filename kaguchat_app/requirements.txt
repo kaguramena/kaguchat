@@ -3,3 +3,7 @@ flask_session
 redis
 mysql-connector-python
 bcrypt
+flask_socketio
+Flask-CORS
+PyJWT
+Flask-JWT-Extended

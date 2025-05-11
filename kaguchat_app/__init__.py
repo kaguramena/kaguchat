@@ -3,9 +3,10 @@ from flask import Flask, session as flask_session, request, make_response # 重�
 import logging
 import uuid
 from .config import current_config # 使用 . 从当前包导入
-from .extensions import socketio, session_ext, chat_service, table_service, logger as ext_logger
+from .extensions import socketio, session_ext, jwt, chat_service, table_service, logger
 from .socket_events import register_socketio_events
 from .processors import get_table_processor as get_processor_func
+from flask_cors import CORS
 
 def create_app(config_object=current_config):
     app = Flask(__name__)
@@ -13,7 +14,18 @@ def create_app(config_object=current_config):
 
     # 初始化扩展
     session_ext.init_app(app)
-    socketio.init_app(app) # 将 app 传递给 SocketIO
+    socketio.init_app(app) 
+    jwt.init_app(app)
+
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": ["http://localhost:3000", "http://localhost:5173"]}}, # 确保列出所有可能的 React 开发服务器源
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # 允许的方法，OPTIONS 很重要
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"], # 允许的请求头，Authorization 用于JWT
+        supports_credentials=True # 如果你需要发送/接收 cookies
+    )
+    logger.info(f"CORS configured for origins: {app.config.get('CORS_ORIGINS', ['http://localhost:3000', 'http://localhost:5173'])} on /api/* routes")
+
 
     # 配置日志 (可以做得更细致)
     logging.basicConfig(level=app.config.get('LOG_LEVEL', 'INFO'))
@@ -29,7 +41,7 @@ def create_app(config_object=current_config):
         # 注意：对于纯 SocketIO 事件，request.cookies 可能不可用，依赖 flask.session
         if 'session_id' not in flask_session: # 使用导入的 flask_session
             flask_session['session_id'] = str(uuid.uuid4())
-            ext_logger.debug(f"Generated new global session_id: {flask_session['session_id']}")
+            logger.debug(f"Generated new global session_id: {flask_session['session_id']}")
 
         # 对于 HTTP 请求，确保 cookie 也被设置
         # 这是一个棘手的地方，因为 before_request 不能直接返回 response 来设置 cookie
@@ -42,7 +54,7 @@ def create_app(config_object=current_config):
         if 'session_id' in flask_session and 'session_id' not in request.cookies:
             if hasattr(response, 'set_cookie'): # 确保是 Flask Response 对象
                  response.set_cookie('session_id', flask_session['session_id'], max_age=3600, samesite='Lax')
-                 ext_logger.debug(f"Set session_id cookie in after_request: {flask_session['session_id']}")
+                 logger.debug(f"Set session_id cookie in after_request: {flask_session['session_id']}")
         return response
     
     @app.context_processor
@@ -68,5 +80,5 @@ def create_app(config_object=current_config):
     # 注册 SocketIO 事件 (从 socket_events.py)
     register_socketio_events(socketio)
 
-    ext_logger.info("Flask App created and configured.")
+    logger.info("Flask App created and configured.")
     return app

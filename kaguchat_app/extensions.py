@@ -1,8 +1,10 @@
 # kaguchat_app/extensions.py
 from flask_socketio import SocketIO
 from flask_session import Session
+from flask_jwt_extended import JWTManager
 from .business.chat_service import ChatService
 from .business.table_service import TableService
+from .business.login_service import LoginService
 import logging
 
 # 初始化 SocketIO，但不绑定 app
@@ -11,9 +13,11 @@ socketio = SocketIO(manage_session=False, cors_allowed_origins="*") # 允许所�
                                                                   # manage_session=False 因为我们用了 Flask-Session
 session_ext = Session()
 chat_service = ChatService() # 可以在这里实例化，或者在 app context 中
-table_service = TableService() # 同上
+table_service = TableService() 
+login_service = LoginService()
 
 logger = logging.getLogger(__name__)
+jwt = JWTManager()
 
 # 表名映射 (也可以移到这里或config.py)
 TABLE_NAME_MAPPING = {
