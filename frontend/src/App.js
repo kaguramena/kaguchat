@@ -6,6 +6,8 @@ import { AuthProvider, AuthContext } from './contexts/AuthContext'; // 导入 Au
 import ChatPage from './pages/ChatPage'; // 假设你创建了这个页面
 import AdminLayout from './admin/layouts/AdminLayout'; // 导入 AdminLayout
 import { UserProfileProvider } from './contexts/UserProfileContext'; // 导入 UserProfileProvider
+import AdminDashboardPage from './admin/pages/AdminDashboardPage'; // 导入 AdminDashboardPage
+import AdminTableManagerPage from './admin/pages/AdminTableManagerPage'; // 导入 AdminTableManagerPage
 
 // 创建一个受保护的路由组件
 const PrivateRoute = ({ children }) => {
@@ -49,17 +51,15 @@ function App() {
                         }
                     />
                     {/* 添加 Admin 主路由 */}
-                    <Route
-                            path="/admin/*" // 使用 /* 来匹配 /admin 及其所有子路径
-                            element={
-                                <PrivateRoute>
-                                    <UserProfileProvider>
-                                        <AdminLayout />
-                                    </UserProfileProvider>
-                                </PrivateRoute>
-                            }
-                        >
-                        </Route>
+                    <Route path="/admin" element={<PrivateRoute>
+                            <UserProfileProvider>
+                                <AdminLayout />
+                            </UserProfileProvider>
+                        </PrivateRoute>} >
+                        <Route index element={<AdminDashboardPage />} />
+                        <Route path="dashboard" element={<AdminDashboardPage />} />
+                        <Route path="manage/:tableName" element={<AdminTableManagerPage />} /> {/* <--- 这个路由会匹配 */}
+                    </Route>
 
                         <Route path="/" element={<Navigate to="/chat" />} />
                         {/* 可以添加一个404页面作为最后一个路由 */}

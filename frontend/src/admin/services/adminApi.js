@@ -30,6 +30,26 @@ adminApiClient.interceptors.request.use(
     }
 );
 
+
+adminApiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('authToken'); // 从 localStorage 获取 token
+        const csrfToken = localStorage.getItem('csrfToken'); // 从 localStorage 获取 CSRF token
+
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        if (csrfToken) { // 如果你的后端API也需要CSRF token
+            config.headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+        // console.log('[adminApi] Sending request with headers:', config.headers);
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 // 响应拦截器：可以在接收到响应后做一些事情，例如全局错误处理
 adminApiClient.interceptors.response.use(
     (response) => {
