@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 // 确保 Typography 已导入
 import { Table, Button, Modal, Form, Input, Select, Spin, Alert, Popconfirm, message, Space, DatePicker, InputNumber, Checkbox, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, FilterOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { 
     getTableSchema, 
     getTableData, 
@@ -127,7 +127,7 @@ const AdminTableManagerPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [tableName, navigate]);
+    }, [tableName]);
 
     useEffect(() => {
         loadSchemaAndData();

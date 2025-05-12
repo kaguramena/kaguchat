@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/LoginPage';
 import { AuthProvider, AuthContext } from './contexts/AuthContext'; // 导入 AuthProvider
 import ChatPage from './pages/ChatPage'; // 假设你创建了这个页面
+import AdminLayout from './admin/layouts/AdminLayout'; // 导入 AdminLayout
+import { UserProfileProvider } from './contexts/UserProfileContext'; // 导入 UserProfileProvider
 
 // 创建一个受保护的路由组件
 const PrivateRoute = ({ children }) => {
@@ -46,6 +48,22 @@ function App() {
                             </PrivateRoute>
                         }
                     />
+                    {/* 添加 Admin 主路由 */}
+                    <Route
+                            path="/admin/*" // 使用 /* 来匹配 /admin 及其所有子路径
+                            element={
+                                <PrivateRoute>
+                                    <UserProfileProvider>
+                                        <AdminLayout />
+                                    </UserProfileProvider>
+                                </PrivateRoute>
+                            }
+                        >
+                        </Route>
+
+                        <Route path="/" element={<Navigate to="/chat" />} />
+                        {/* 可以添加一个404页面作为最后一个路由 */}
+                        <Route path="*" element={<div>404 - Page Not Found</div>} />
                     {/* 其他 Admin 路由也可以使用 PrivateRoute */}
                     <Route path="/" element={<Navigate to="/chat" />} />
                 </Routes>
