@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../contexts/AuthContext'; // 用于登出等
+import { Link } from 'react-router-dom';
 
 function ChatPage() {
     const [currentUserDetails, setCurrentUserDetails] = useState(null);
@@ -51,10 +52,18 @@ function ChatPage() {
 
     return (
         <div>
-            <header style={{ padding: '1rem', background: '#f0f0f0', display: 'flex', justifyContent: 'space-between' }}>
+            <header style={{ padding: '1rem', background: '#f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h1>KaguChat - Welcome, {currentUserDetails.nickname || currentUserDetails.username}!</h1>
-                {currentUserDetails.avatar_url && <img src={currentUserDetails.avatar_url} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%' }} />}
-                <button onClick={logout}>Logout</button>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {currentUserDetails.avatar_url && <img src={currentUserDetails.avatar_url} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%', marginRight: '1rem' }} />}
+                    {/* 添加 Admin Panel 入口 */}
+                    <Link to="/admin" style={{ marginRight: '1rem', padding: '0.5rem 1rem', background: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
+                        Admin Panel
+                    </Link>
+                    <button onClick={logout} style={{ padding: '0.5rem 1rem', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                        Logout
+                    </button>
+                </div>
             </header>
             <main>
                 <p>Chat content goes here...</p>

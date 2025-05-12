@@ -140,6 +140,7 @@ useEffect(() => {
             if(storedToken && storedUserId){
                 setToken(storedToken);
                 setUserId(storedUserId);
+                setCsrfToken(storedCsrfToken);
                 try{
                     await axios.getItem('http://localhost:5001/api/auth/me');
                 }catch (error){
