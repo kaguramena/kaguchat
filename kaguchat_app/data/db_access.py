@@ -85,7 +85,6 @@ class DatabaseAccess:
             return []
 
     def execute_update(self, query, params=None, fetch_id=False):
-        # ... (此方法内部的 try/with self/except _fetch_id 保持不变) ...
         # print(f"DB_DEBUG: execute_update: {query} with params {params}, fetch_id={fetch_id}") # 调试
         try:
             with self: # 使用上下文管理器

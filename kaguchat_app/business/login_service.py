@@ -26,6 +26,7 @@ class LoginService:
             return None
         return user_record
     
+
     def register_user(self, username, password, nickname, phone, avatar_url= None):
         """注册用户"""
         if not username or not password or not phone:
@@ -62,3 +63,9 @@ class LoginService:
             return {"success": False, "error": "Username or phone number might already be taken (integrity error)."}
         except Exception as e:
             return {"success": False, "error": "An unexpected error occurred during registration."}
+        
+    def upload_avatar(self, user_id, avatar_url):
+        """更新用户头像"""
+        update_query = "UPDATE Users SET avatar_url = %s WHERE user_id = %s"
+        params = (avatar_url, user_id)
+        return self.db_access.execute_update(update_query, params)

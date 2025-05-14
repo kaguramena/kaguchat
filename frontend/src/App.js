@@ -43,8 +43,6 @@ function App() {
                             <SignUpPage />
                         </PublicRoute>
                     } />
-                </Routes>
-                <Routes>
                     <Route path="/login" element={
                         <PublicRoute>
                             <LoginPage />

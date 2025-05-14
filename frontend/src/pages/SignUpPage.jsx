@@ -1,31 +1,62 @@
-import {react, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {AuthContext} from '../contexts/AuthContext'; // 确保路径正确
+// frontend/src/pages/SignUpPage.jsx
+import React, { useState, useContext } from 'react'; // 移除了 react (因为 React 自动导入)
+import { useNavigate, Link } from 'react-router-dom'; // 确保 Link 已导入
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+// import { AuthContext } from '../contexts/AuthContext'; // 如果注册后自动登录或需要token
 
-function SignUpPage(){
+function SignUpPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [phone, setPhone] = useState('');
-    const [avatar_url, setAvatarUrl] = useState('');
     const [nickname, setNickname] = useState('');
-    
-    // State 
+    const [avatarFile, setAvatarFile] = useState(null); // 用于存储文件对象
+    const [avatarPreview, setAvatarPreview] = useState(''); // 用于预览图片
+
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
-    // const auth = useContext(AuthContext); // 如果注册后自动登录，则需要
 
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > (16 * 1024 * 1024)) { // 假设最大 16MB
+                setError('File is too large. Maximum size is 16MB.');
+                setAvatarFile(null);
+                setAvatarPreview('');
+                e.target.value = null; // 清除文件输入
+                return;
+            }
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                setError('Invalid file type. Only PNG, JPG, GIF are allowed.');
+                setAvatarFile(null);
+                setAvatarPreview('');
+                e.target.value = null; // 清除文件输入
+                return;
+            }
+            setError(''); // 清除之前的错误
+            setAvatarFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setAvatarFile(null);
+            setAvatarPreview('');
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setSuccessMessage('');
-        if(password !== confirmPassword){
+
+        if (password !== confirmPassword) {
             setError('Passwords do not match.');
             return;
         }
@@ -35,29 +66,39 @@ function SignUpPage(){
         }
         setIsSubmitting(true);
 
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+        formData.append('phone', phone);
+        formData.append('nickname', nickname || username);
+        if (avatarFile) {
+            formData.append('avatar', avatarFile);
+        }
+
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
-                username,
-                password,
-                phone,
-                nickname: nickname || username, // 如果昵称为空，则使用用户名
-                avatar_url: avatar_url || null,
+            // 发送 multipart/form-data
+            const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    // 如果你的 signup 接口不需要 JWT Token (因为是公开注册)，则不需要 Authorization
+                },
             });
 
             if (response.status === 201) {
-                setSuccessMessage(response.data.msg || "Registration successful! Please log in.");
+                setSuccessMessage(response.data.msg || "Registration successful!");
                 // 清空表单
                 setUsername('');
                 setPassword('');
                 setConfirmPassword('');
                 setPhone('');
                 setNickname('');
-                // 可选：几秒后导航到登录页面
+                setAvatarFile(null);
+                setAvatarPreview('');
+
                 setTimeout(() => {
                     navigate('/login');
                 }, 2000);
             } else {
-                // 对于非201的成功响应（理论上不应该，但以防万一）
                 setError(response.data.msg || "An unexpected response occurred.");
             }
         } catch (err) {
@@ -81,7 +122,8 @@ function SignUpPage(){
                 {successMessage && <p style={{ color: 'green', textAlign: 'center', marginBottom: '16px', background: '#e8f5e9', padding: '8px', borderRadius: '4px' }}>{successMessage}</p>}
                 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: '16px' }}>
+                    {/* ... (username, password, confirmPassword, phone, nickname input fields as before) ... */}
+                     <div style={{ marginBottom: '16px' }}>
                         <label style={{ display: 'block', color: '#4A5568', marginBottom: '6px', fontSize: '0.9rem' }}>Username<span style={{color: 'red'}}>*</span></label>
                         <input
                             type="text"
@@ -127,11 +169,11 @@ function SignUpPage(){
                             placeholder="11-digit phone number"
                             disabled={isSubmitting}
                             required
-                            pattern="\d{11}"
+                            pattern="\d{11}" // HTML5 pattern validation
                             title="Phone number must be 11 digits."
                         />
                     </div>
-                     <div style={{ marginBottom: '24px' }}>
+                     <div style={{ marginBottom: '16px' }}> {/* Adjusted margin */}
                         <label style={{ display: 'block', color: '#4A5568', marginBottom: '6px', fontSize: '0.9rem' }}>Nickname (Optional)</label>
                         <input
                             type="text"
@@ -142,6 +184,23 @@ function SignUpPage(){
                             disabled={isSubmitting}
                         />
                     </div>
+
+                    <div style={{ marginBottom: '24px' }}> {/* Avatar input field */}
+                        <label style={{ display: 'block', color: '#4A5568', marginBottom: '6px', fontSize: '0.9rem' }}>Avatar (Optional)</label>
+                        <input
+                            type="file"
+                            onChange={handleAvatarChange}
+                            accept="image/png, image/jpeg, image/gif"
+                            style={{ width: '100%', padding: '10px', border: '1px solid #CBD5E0', borderRadius: '4px', boxSizing: 'border-box' }}
+                            disabled={isSubmitting}
+                        />
+                        {avatarPreview && (
+                            <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                                <img src={avatarPreview} alt="Avatar Preview" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #10B981' }} />
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         type="submit"
                         style={{ width: '100%', background: '#10B981', color: 'white', padding: '12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: isSubmitting ? 0.7 : 1, transition: 'opacity 0.2s' }}
@@ -156,7 +215,6 @@ function SignUpPage(){
             </div>
         </div>
     );
-
 }
 
 export default SignUpPage;

@@ -112,6 +112,7 @@ const AdminLayout = () => {
                         {isLoadingProfile ? <Spin size="small" /> : profile ? (
                             <>
                                 <Avatar src={profile.avatar_url} icon={!profile.avatar_url && <UserOutlined />} style={{ marginRight: 8 }} />
+                                {console.log(profile.avatar_url)}
                                 <span style={{ marginRight: '16px' }}>
                                     Welcome, {profile.nickname || profile.username}
                                 </span>
@@ -119,6 +120,9 @@ const AdminLayout = () => {
                         ) : (
                             <span style={{ marginRight: '16px' }}>Welcome, Admin</span>
                         )}
+                        <Button type="primary" icon={<UserOutlined />} style={{ marginRight: '16px' }} onClick={() => navigate('/chat')}>
+                            Back to Chat
+                        </Button>
                         <Button type="default" icon={<LogoutOutlined />} onClick={handleLogout}>
                             Logout
                         </Button>

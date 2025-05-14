@@ -7,6 +7,7 @@ from .extensions import socketio, session_ext, jwt, chat_service, table_service,
 from .socket_events import register_socketio_events
 from .processors import get_table_processor as get_processor_func
 from flask_cors import CORS
+import os
 
 def create_app(config_object=current_config):
     app = Flask(__name__)
@@ -38,13 +39,20 @@ def create_app(config_object=current_config):
     from .routes.auth_routes import auth_bp
     from .routes.chat_routes import chat_bp
     from .routes.admin_routes import admin_bp
+    from .routes.user_routes import user_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(user_bp)
 
     # 注册 SocketIO 事件 (从 socket_events.py)
     register_socketio_events(socketio)
+
+    # 头像上传文件夹
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+        logger.info(f"Created upload folder: {app.config['UPLOAD_FOLDER']}")
 
     logger.info("Flask App created and configured.")
     return app

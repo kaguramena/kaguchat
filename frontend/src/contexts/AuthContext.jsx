@@ -132,25 +132,41 @@ useEffect(() => {
     }, []);
 
     useEffect(() => {
-        const validateToekn = async () =>{ 
+        const restoreAuthState = () => {
+            setIsLoading(true);
+            console.log('[AuthContext] restoreAuthState: Starting...');
             const storedToken = localStorage.getItem('authToken');
             const storedUserId = localStorage.getItem('userId');
             const storedCsrfToken = localStorage.getItem('csrfToken');
-
-            if(storedToken && storedUserId){
+    
+            console.log('[AuthContext] restoreAuthState: Stored token:', storedToken);
+            console.log('[AuthContext] restoreAuthState: Stored userId:', storedUserId);
+            console.log('[AuthContext] restoreAuthState: Stored csrfToken:', storedCsrfToken);
+    
+            if (storedToken && storedUserId) {
+                console.log('[AuthContext] restoreAuthState: Token and UserId found. Restoring to state.');
                 setToken(storedToken);
                 setUserId(storedUserId);
-                setCsrfToken(storedCsrfToken);
-                try{
-                    await axios.getItem('http://localhost:5001/api/auth/me');
-                }catch (error){
-                    console.log('Token validation failed on load, logging out.');
-                    logout(); // Token 无效或过期
-                }
+                setCsrfToken(storedCsrfToken || null);
+                // **** 关键：不要在这里 await axios.get('/api/auth/me') ****
+                // **** 也不要有 try...catch 来调用 logout() ****
+            } else {
+                console.log('[AuthContext] restoreAuthState: No token or userId in localStorage. Ensuring state is cleared.');
+                // 确保 state 与 localStorage (空) 的状态一致
+                setToken(null);
+                setUserId(null);
+                setCsrfToken(null);
+                // 注意：如果 localStorage 中没有 token，就不应该调用 logout() 来再次清除空的 localStorage，
+                // 除非 logout() 有其他重要的副作用。但通常，如果一开始就没 token，直接设置 state 为 null 即可。
+                // 如果你担心其他地方可能没有完全清除 localStorage，保留这里的 logout() 也可以，但要确保它不会导致意外的副作用或循环。
+                // 考虑到你遇到的问题，暂时注释掉这里的 logout() 也是一个调试步骤。
+                // logout(); // <--- 暂时注释掉这一行，看看 localStorage 是否还会被清空
             }
             setIsLoading(false);
+            console.log('[AuthContext] restoreAuthState: Finished. isLoadingAuth is now:', false);
         };
-        validateToekn();
+    
+        restoreAuthState();
     }, [logout]);
 
     return (

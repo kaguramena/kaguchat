@@ -35,6 +35,11 @@ class Config:
     DEBUG = True # 开发时设为True，生产环境设为False
     LOG_LEVEL = 'DEBUG'
 
+    # 用户头像配置
+    UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static/avatars')
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'} # 允许的图片类型
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 可选：限制上传文件大小，例如16MB
+
 # 可以根据需要创建不同的配置类，例如 DevelopmentConfig, ProductionConfig
 class DevelopmentConfig(Config):
     DEBUG = True
