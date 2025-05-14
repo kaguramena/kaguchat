@@ -23,8 +23,6 @@ function LoginPage() {
             setError(result.error || 'Invalid username or password.');
         }
     };
-    // ... JSX for the login form remains the same as your previous example ...
-    // Make sure to disable the button when isLoggingIn is true
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(to right, #6EE7B7, #3B82F6)' }}>
             <div style={{ background: 'white', padding: '40px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
@@ -62,6 +60,9 @@ function LoginPage() {
                     >
                         {isLoggingIn ? 'Logging in...' : 'Login'}
                     </button>
+                    <p style={{ textAlign: 'center', marginTop: '16px' }}>
+                        Don't have an account? <a href="/signup" style={{ color: '#3B82F6', textDecoration: 'none' }}>Sign Up</a>
+                    </p>
                 </form>
             </div>
         </div>

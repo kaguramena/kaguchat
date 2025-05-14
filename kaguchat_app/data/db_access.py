@@ -70,7 +70,7 @@ class DatabaseAccess:
 
     def execute_query(self, query, params=None):
         # ... (此方法内部的 try/with self/except 保持不变) ...
-        # print(f"DB_DEBUG: execute_query: {query} with params {params}") # 调试
+        print(f"DB_DEBUG: execute_query: {query} with params {params}") # 调试
         try:
             with self: # 使用上下文管理器确保连接和游标
                 self.cursor.execute(query, params or ())

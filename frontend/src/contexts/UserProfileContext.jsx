@@ -20,7 +20,6 @@ export const UserProfileProvider = ({ children }) => {
         setIsLoadingProfile(true);
         setProfileError(null);
         try {
-            // 确保 axios 的 Authorization header 已经由 AuthContext 设置好了
             const response = await axios.get('http://localhost:5001/api/auth/me', {
                 headers: {
                     'Authorization': `Bearer ${token}`,

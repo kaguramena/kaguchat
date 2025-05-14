@@ -29,7 +29,7 @@ class UsersTableProcessor(BaseTableProcessor):
         if username:
             condition_username = {"username": username}
             if is_edit: # 编辑时，如果用户名是自己的，则不算重复
-                condition_username[f"{self.primary_key}!="] = record_id # 假设 table_service 支持这种条件
+                condition_username[f"{self.primary_key} !="] = record_id # 假设 table_service 支持这种条件
             if table_service.record_exists("Users", condition_username):
                 raise DuplicateEntryError(f"Username '{username}' already exists.", field_name='username')
 

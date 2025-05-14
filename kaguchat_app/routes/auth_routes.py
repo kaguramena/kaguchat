@@ -53,3 +53,26 @@ def get_current_user_info_api():
 def logout_api():
     logger.debug(f"Logout request for user_id: {get_jwt_identity()}")
     return jsonify({"msg": "Logout successful"}), 200
+
+# --- 新增注册 API 端点 ---
+@auth_bp.route('/signup', methods=['POST'])
+def signup_api():
+    data = request.get_json()
+    if not data:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+    phone = data.get('phone')
+    nickname = data.get('nickname', username) # 如果没提供昵称，默认为用户名
+    avatar_url = data.get('avatar_url', None) # 可选
+
+    if not username or not password or not phone:
+        return jsonify({"msg": "Username, password, and phone are required"}), 400
+    
+    result = login_service.register_user(username, password, nickname,phone, avatar_url)
+
+    if result.get("success"):
+        return jsonify({"msg": "User created successfully", "user_id": result.get("user_id")}), 201
+    else:
+        return jsonify({"msg": result.get("error", "Registration failed")}), 400 # 或 409 Conflict 如果是重复条目

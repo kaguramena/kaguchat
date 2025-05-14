@@ -53,7 +53,6 @@ class TableService:
             elif col.endswith(" >"):
                 operator = ">"
                 column_name = col[:-2].strip()
-            # ...可以添加更多操作符支持
             clauses.append(f"{column_name} {operator} %s")
             params.append(val)
 

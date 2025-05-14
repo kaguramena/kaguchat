@@ -33,7 +33,7 @@ class BaseTableProcessor(ABC):
         """定义哪些字段是数据库自动管理的日期时间字段 (通常不应由用户直接编辑)。"""
         # 这个映射可以更集中地管理，例如在配置中
         auto_fields_map = {
-            "Users": ["created_at", "updated_at"], # 假设 Users 表有 updated_at
+            "Users": ["created_at"], # 假设 Users 表有 updated_at
             "Friends": ["created_at"],
             "Groups": ["created_at"],
             "Group_Members": ["join_at"],
@@ -97,8 +97,7 @@ class BaseTableProcessor(ABC):
         # 首先获取当前记录，确保它存在
         current_record_dict = self.get_record_by_id(record_id) # 假设返回字典
 
-        fields_for_edit = self.get_form_fields_edit(current_record_dict) #可以传递当前记录用于动态字段
-        raw_values_from_form = self._extract_values_from_form(form_data, fields_for_edit, record_id_for_edit=record_id)
+        raw_values_from_form = form_data
 
         self.validate_edit(record_id, raw_values_from_form, current_record_dict, form_data)
         prepared_values_for_update = self.prepare_data_for_edit(record_id, raw_values_from_form.copy(), current_record_dict, form_data)

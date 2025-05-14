@@ -16,12 +16,12 @@ class ChatService:
         # 格式化 last_message_time
         return [
             {
-                'contact_id': row[0],
-                'type': row[1],
-                'name': row[2],
-                'avatar_url': row[3],
-                'last_message': row[4],
-                'last_message_time': row[5].strftime('%H:%M') if row[5] else None
+                'contact_id': row['contact_id'],
+                'type': row['type'],
+                'name': row['name'],
+                'avatar_url': row['avatar_url'],
+                'last_message': row['last_message'],
+                'last_message_time': row['last_message_time'].strftime('%H:%M') if row['last_message_time'] else None
             } for row in results
         ]
 
@@ -49,13 +49,13 @@ class ChatService:
         messages = self.db_access.execute_query(query, params)
         return [
             {
-                'id': msg[0],
-                'sender_id': msg[1],
-                'receiver_id': msg[2],
-                'group_id': msg[3],
-                'content': msg[4],
-                'sent_at': msg[5].strftime('%H:%M'),
-                'is_self': msg[6]
+                'id': msg['message_id'],
+                'sender_id': msg['sender_id'],
+                'receiver_id': msg['receiver_id'],
+                'group_id': msg['group_id'],
+                'content': msg['content'],
+                'sent_at': msg['sent_at'].strftime('%H:%M'),
+                'is_self': msg['is_self']
             } for msg in messages
         ]
 

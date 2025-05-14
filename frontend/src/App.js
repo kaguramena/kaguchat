@@ -8,6 +8,7 @@ import AdminLayout from './admin/layouts/AdminLayout'; // 导入 AdminLayout
 import { UserProfileProvider } from './contexts/UserProfileContext'; // 导入 UserProfileProvider
 import AdminDashboardPage from './admin/pages/AdminDashboardPage'; // 导入 AdminDashboardPage
 import AdminTableManagerPage from './admin/pages/AdminTableManagerPage'; // 导入 AdminTableManagerPage
+import SignUpPage from './pages/SignUpPage';
 
 // 创建一个受保护的路由组件
 const PrivateRoute = ({ children }) => {
@@ -37,6 +38,13 @@ function App() {
         <AuthProvider>
             <Router>
                 <Routes>
+                    <Route path="/signup" element={
+                        <PublicRoute>
+                            <SignUpPage />
+                        </PublicRoute>
+                    } />
+                </Routes>
+                <Routes>
                     <Route path="/login" element={
                         <PublicRoute>
                             <LoginPage />
@@ -46,12 +54,15 @@ function App() {
                         path="/chat/*" // 使用 /* 允许 ChatPage 内部嵌套路由
                         element={
                             <PrivateRoute>
-                                <ChatPage />
+                                <UserProfileProvider>
+                                    <ChatPage />
+                                </UserProfileProvider>
                             </PrivateRoute>
                         }
                     />
                     {/* 添加 Admin 主路由 */}
-                    <Route path="/admin" element={<PrivateRoute>
+                    <Route path="/admin" element={
+                        <PrivateRoute>
                             <UserProfileProvider>
                                 <AdminLayout />
                             </UserProfileProvider>

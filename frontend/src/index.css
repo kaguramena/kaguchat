@@ -11,3 +11,5 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+@import '~antd/dist/reset.css'; /* 或者 antd/dist/antd.min.css，根据你的版本和需求 */

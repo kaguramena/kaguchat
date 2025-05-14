@@ -184,7 +184,7 @@ def add_table_record_api(table_name_display):
         processor.validate_add(raw_values, json_data) # 第二个参数 form_data 在 API 场景下可以是 json_data
         prepared_values = processor.prepare_data_for_add(raw_values, json_data)
 
-        new_record_id = processor.table_service.add_record(processor.table_name_actual, prepared_values)
+        new_record_id = processor.process_add(prepared_values)
         if new_record_id is None: # add_record 可能返回 None 或 0 表示失败
             raise Exception("Failed to add record to database.")
 
@@ -223,22 +223,9 @@ def update_table_record_api(table_name_display, record_id):
             key: (value.strip() if isinstance(value, str) else value) if value not in ['', None] else None
             for key, value in json_data.items()
         }
+        # logger.debug(f"Raw values from payload: {raw_values_from_payload}")
 
-        # 验证和准备数据
-        # 注意：validate_edit 和 prepare_data_for_edit 在 BaseProcessor 中的签名
-        # 是 (self, record_id, raw_values_from_form, current_record_dict, form_data)
-        # form_data 在 API 场景可以是原始的 json_data
-        processor.validate_edit(record_id, raw_values_from_payload, current_record_dict, json_data)
-        prepared_values_for_update = processor.prepare_data_for_edit(record_id, raw_values_from_payload, current_record_dict, json_data)
-
-        if prepared_values_for_update: # 只有当有值需要更新时才执行
-            rows_affected = processor.table_service.update_record(
-                processor.table_name_actual,
-                processor.primary_key,
-                record_id,
-                prepared_values_for_update
-            )
-            # 根据 rows_affected 判断是否成功，或者直接获取更新后的记录
+        processor.process_edit(record_id,raw_values_from_payload)
 
         updated_record = processor.get_record_by_id(record_id) # 获取更新后的记录
         return jsonify(msg="Record updated successfully", record=updated_record), 200
@@ -266,9 +253,7 @@ def delete_table_record_api(table_name_display, record_id):
         current_record = processor.get_record_by_id(record_id)
         processor.validate_delete(record_id, current_record) # 假设 validate_delete 不需要 form_data
 
-        rows_affected = processor.table_service.delete_record(
-            processor.table_name_actual,
-            processor.primary_key,
+        rows_affected = processor.process_delete(
             record_id
         )
         if rows_affected == 0 or rows_affected is None: # delete_record 可能返回影响的行数或None
