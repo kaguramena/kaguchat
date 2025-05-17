@@ -35,48 +35,34 @@ const PublicRoute = ({ children }) => {
 
 function App() {
     return (
-        <AuthProvider>
-            <Router>
-                <Routes>
-                    <Route path="/signup" element={
-                        <PublicRoute>
-                            <SignUpPage />
-                        </PublicRoute>
-                    } />
-                    <Route path="/login" element={
-                        <PublicRoute>
-                            <LoginPage />
-                        </PublicRoute>
-                    } />
-                    <Route
-                        path="/chat/*" // 使用 /* 允许 ChatPage 内部嵌套路由
-                        element={
-                            <PrivateRoute>
-                                <UserProfileProvider>
-                                    <ChatPage />
-                                </UserProfileProvider>
-                            </PrivateRoute>
-                        }
-                    />
-                    {/* 添加 Admin 主路由 */}
-                    <Route path="/admin" element={
-                        <PrivateRoute>
-                            <UserProfileProvider>
-                                <AdminLayout />
-                            </UserProfileProvider>
-                        </PrivateRoute>} >
-                        <Route index element={<AdminDashboardPage />} />
-                        <Route path="dashboard" element={<AdminDashboardPage />} />
-                        <Route path="manage/:tableName" element={<AdminTableManagerPage />} /> {/* <--- 这个路由会匹配 */}
-                    </Route>
+        <AuthProvider> {/* 1. AuthProvider 在最外层 */}
+            <UserProfileProvider> {/* 2. UserProfileProvider 包裹所有可能需要 profile 的部分 */}
+                <Router>
+                    <Routes>
+                        <Route path="/signup" element={
+                            <PublicRoute> <SignUpPage /> </PublicRoute>
+                        } />
+                        <Route path="/login" element={
+                            <PublicRoute> <LoginPage /> </PublicRoute>
+                        } />
 
-                        <Route path="/" element={<Navigate to="/chat" />} />
-                        {/* 可以添加一个404页面作为最后一个路由 */}
+                        {/* 私有路由现在都共享同一个 UserProfileContext */}
+                        <Route path="/chat/*" element={
+                            <PrivateRoute> <ChatPage /> </PrivateRoute>
+                        } />
+                        <Route path="/admin" element={
+                            <PrivateRoute> <AdminLayout /> </PrivateRoute>
+                        }>
+                            <Route index element={<AdminDashboardPage />} />
+                            <Route path="dashboard" element={<AdminDashboardPage />} />
+                            <Route path="manage/:tableName" element={<AdminTableManagerPage />} />
+                        </Route>
+
+                        <Route path="/" element={<Navigate to='/chat' />} />
                         <Route path="*" element={<div>404 - Page Not Found</div>} />
-                    {/* 其他 Admin 路由也可以使用 PrivateRoute */}
-                    <Route path="/" element={<Navigate to="/chat" />} />
-                </Routes>
-            </Router>
+                    </Routes>
+                </Router>
+            </UserProfileProvider>
         </AuthProvider>
     );
 }

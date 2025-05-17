@@ -47,6 +47,7 @@ def login_api():
 @auth_bp.route('/me', methods = ['GET'])
 @jwt_required()
 def get_current_user_info_api():
+    FLASK_URL = current_app.config['FLASK_URL']
     current_user_id = get_jwt_identity()
     user_record = login_service.get_profile(current_user_id)
     if not user_record:
@@ -54,7 +55,7 @@ def get_current_user_info_api():
         return jsonify({"msg":"User not found for current token"}), 404
     user_data = user_record[0]
     if user_data.get("avatar_url"):
-        user_data["avatar_url"] = "http://localhost:5001" + user_data["avatar_url"] # 这里假设你在本地开发，实际部署时需要根据你的域名或IP来设置
+        user_data["avatar_url"] = FLASK_URL + user_data["avatar_url"] # 这里假设你在本地开发，实际部署时需要根据你的域名或IP来设置
     return jsonify(user_data), 200
     
 

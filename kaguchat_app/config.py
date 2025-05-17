@@ -13,6 +13,10 @@ class Config:
         "message_attachments": "Message Attachments"
     }
 
+    FLASK_HOST = "http://localhost"
+    FLASK_PORT = 5001
+    FLASK_URL = f"{FLASK_HOST}:{FLASK_PORT}"
+
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'wyt153hh-default-secret-key' # 建议从环境变量读取
 
     # Redis Session 配置

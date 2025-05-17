@@ -7,6 +7,7 @@ import { Layout, List, Avatar, Input, Button, Spin, Alert, Typography, Space } f
 import { SendOutlined, UserOutlined, TeamOutlined, LogoutOutlined, ArrowLeftOutlined } from '@ant-design/icons'; // 移除了 EllipsisOutlined
 import './ChatPage.css';
 import { Link } from 'react-router-dom';
+import { io } from 'socket.io-client'; // 确保安装了 socket.io-client
 
 
 const { Header, Sider, Content, Footer } = Layout;
@@ -33,7 +34,7 @@ const ContactItem = ({ contact, isSelected, onSelectContact }) => {
                     </Text>
                 }
             />
-            {contact.last_message_time && <Text type="secondary" style={{ fontSize: '0.75rem' }}>{contact.last_message_time}</Text>}
+            {contact.last_message_time && <Text type="secondary" style={{ fontSize: '0.75rem' }}>{new Date(contact.last_message_time).toLocaleTimeString()}</Text>}
         </List.Item>
     );
 };
@@ -44,11 +45,12 @@ const MessageItem = ({ message, currentUser }) => {
     // 假设后端返回的是 '%Y-%m-%d %H:%M:%S' 格式的时间
     // TODO: 日期表示有问题 ！
     const sentAtDate = message.sent_at ? new Date(message.sent_at) : new Date();
-    const formattedTime = sentAtDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formattedTime = message.sent_at
+        ? sentAtDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '刚刚';
 
-    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender_nickname || 'U')}&background=random&color=fff&rounded=true&size=32`;
-    const currentUserAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.nickname || currentUser?.username || 'M')}&background=4CAF50&color=fff&rounded=true&size=32`;
-
+    const defaultAvatar = `http://localhost:5001/static/avatars/default.jpg`;
+    const currentUserAvatar = defaultAvatar;
 
     return (
         <div className={`message-item-wrapper ${isSelf ? 'self' : 'other'}`}>
@@ -84,6 +86,7 @@ const MessagesArea = ({ messages, currentUser, isLoading, error }) => {
     const messagesEndRef = useRef(null);
 
     const scrollToBottom = () => {
+        console.log("有新消息,滚动到消息底部");
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
@@ -98,7 +101,7 @@ const MessagesArea = ({ messages, currentUser, isLoading, error }) => {
     return (
         <div className="messages-area-content"> {/* 使用 ChatPage.css 中定义的样式 */}
             {messages.map(message => (
-                <MessageItem key={message.id || `msg-${Math.random()}`} message={message} currentUser={currentUser} />
+                <MessageItem key={message.message_id || `msg-${Math.random()}`} message={message} currentUser={currentUser} />
             ))}
             <div ref={messagesEndRef} />
         </div>
@@ -108,13 +111,11 @@ const MessagesArea = ({ messages, currentUser, isLoading, error }) => {
 
 // --- 子组件：消息输入框 ---
 const MessageInput = ({ onSendMessage, disabled }) => {
-    // ... (保持不变)
     const [messageContent, setMessageContent] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (messageContent.trim() && !disabled) {
-            onSendMessage(messageContent.trim());
+    const handleSubmit = (value) => {
+        if (value.trim() && !disabled) {
+            onSendMessage(value.trim());
             setMessageContent('');
         }
     };
@@ -125,7 +126,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
             enterButton={<Button type="primary" icon={<SendOutlined />} disabled={disabled}>Send</Button>}
             value={messageContent}
             onChange={(e) => setMessageContent(e.target.value)}
-            //onSearch={handleSendMessage} // onSearch 对应点击发送按钮或回车
+            onSearch={handleSubmit} // onSearch 对应点击发送按钮或回车
             disabled={disabled}
             size="large"
             className="message-input-search" // 添加class以便在CSS中调整
@@ -183,7 +184,32 @@ function ChatPage() {
     const [errorMessages, setErrorMessages] = useState(null);
     // messageInput 状态移到 MessageInput 组件内部，或者在这里管理并通过 props 传递给 MessageInput
 
+    const socketRef = useRef(null);
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
+    useEffect(() => {
+        socketRef.current = io(API_BASE_URL, {
+            auth: {
+                token: localStorage.getItem('authToken')
+            },
+            transports: ['websocket'],
+            withCredentials: true
+        });
+        socketRef.current.on('connect', () => {
+            console.log('[Socket.IO] Connected! SID:', socketRef.current.id);
+        });
+        // 替换 socket 消息处理逻辑
+        socketRef.current.on("new_message", (message) => {
+            if (message.sender_id === currentUser?.user_id) {
+                console.log("🔁 忽略自己发出的广播消息");
+                return; // 避免重复插入
+            }
+            console.log("📨 插入来自对方的新消息:", message);
+            setMessages(prev => [...prev, message]);
+            
+        });
+        // ...
+    }, [currentUser, selectedContact]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -237,30 +263,40 @@ function ChatPage() {
 
     const handleSelectContact = useCallback((contact) => {
         if (selectedContact && selectedContact.type === contact.type && selectedContact.contact_id === contact.contact_id) {
-            if (isMobileView) setShowChatPaneOnMobile(true); // 如果点击已选中的，在移动端也确保显示聊天
-            return; 
+            if (isMobileView) setShowChatPaneOnMobile(true);
+            return;
         }
+
+        // 取消之前的选中状态
+        if (selectedContact) {
+            socketRef.current?.emit('leave_chat', {
+                contact_id: selectedContact.contact_id,
+                contact_type: selectedContact.type
+            });
+            console.log("离开聊天:", selectedContact.contact_id, selectedContact.type);
+        }
+
+        // 设置新的选中状态
         setSelectedContact(contact);
-        fetchMessages(contact); 
+        fetchMessages(contact);
         if (isMobileView) {
-            setShowChatPaneOnMobile(true); 
+            setShowChatPaneOnMobile(true);
         }
         // TODO: socket.emit('join_chat', ...);
+        socketRef.current?.emit('join_chat', { contact_id: contact.contact_id, contact_type: contact.type });
+        console.log("加入聊天:", contact.contact_id, contact.type);
     }, [fetchMessages, selectedContact, isMobileView]);
 
-    const handleSendMessage = (messageContent) => { // messageContent 由 MessageInput 组件传入
+    const handleSendMessage = (messageContent) => {
         if (!messageContent.trim() || !selectedContact || !currentUser) return;
-        
         // TODO: 使用 SocketIO 发送消息
-        // socket.emit('send_message', { message_content: messageContent, contact_id: selectedContact.contact_id, contact_type: selectedContact.type });
-
+        socketRef.current?.emit('send_message', { message_content: messageContent, contact_id: selectedContact.contact_id, contact_type: selectedContact.type });
+        console.log("正在发送 socket 消息:", messageContent);
         const optimisticMessage = {
             id: `temp-${Date.now()}`,
             sender_id: currentUser.user_id,
-            // sender_nickname: currentUser.nickname || currentUser.username, // MessageItem 会处理
-            // sender_avatar_url: currentUser.avatar_url,                   // MessageItem 会处理
             content: messageContent.trim(),
-            sent_at: new Date().toISOString(), 
+            sent_at: new Date().toISOString(),
             is_self: true,
         };
         setMessages(prev => [...prev, optimisticMessage]);

@@ -21,7 +21,7 @@ class ChatService:
                 'name': row['name'],
                 'avatar_url': row['avatar_url'],
                 'last_message': row['last_message'],
-                'last_message_time': row['last_message_time'].strftime('%H:%M') if row['last_message_time'] else None
+                'last_message_time': row['last_message_time'].strftime('%Y-%m-%dT%H:%M:%S.%f') if row['last_message_time'] else None
             } for row in results
         ]
 
@@ -54,16 +54,57 @@ class ChatService:
                 'receiver_id': msg['receiver_id'],
                 'group_id': msg['group_id'],
                 'content': msg['content'],
-                'sent_at': msg['sent_at'].strftime('%H:%M'),
+                'sent_at': msg['sent_at'].strftime('%Y-%m-%dT%H:%M:%S.%f'),
                 'is_self': msg['is_self']
             } for msg in messages
         ]
 
-    def send_message(self, sender_id, receiver_id, group_id, content):
+    """TODO: 目前只支持文本消息, 如需扩展需要链接 Attachment 表"""
+    def send_message(self, sender_id, contact_id, contact_type, content):
+        if contact_type == 'firend':
+            receiver_id = contact_id
+            group_id = None
+        else:  # group
+            receiver_id = None
+            group_id = contact_id
         """发送消息"""
         query = """
             INSERT INTO Messages (sender_id, receiver_id, group_id, content, message_type, sent_at)
             VALUES (%s, %s, %s, %s, 0, NOW())
         """
         params = (sender_id, receiver_id, group_id, content)
-        self.db_access.execute_update(query, params)
+        message_id = self.db_access.execute_update(query, params)
+        return message_id
+
+    def send_message_and_get_info(self, sender_id, contact_id, contact_type, content):
+        receiver_id = None
+        group_id = None
+        if contact_type == 'friend':
+            receiver_id = contact_id
+            group_id = None
+        elif contact_type == 'group':  # group
+            receiver_id = None
+            group_id = contact_id
+        """发送消息"""
+        query = """
+            INSERT INTO Messages (sender_id, receiver_id, group_id, content, message_type, sent_at)
+            VALUES (%s, %s, %s, %s, 0, NOW())
+        """
+        params = (sender_id, receiver_id, group_id, content)
+        message_id = self.db_access.execute_update(query, params, fetch_id=True)
+        query = """
+            SELECT message_id, sender_id, receiver_id, group_id, content, sent_at
+            FROM Messages
+            WHERE message_id = %s
+        """
+        params = (message_id,)
+        message = self.db_access.execute_query(query, params)
+        # print(message)
+        return {
+            'message_id': message[0]['message_id'],
+            'sender_id': message[0]['sender_id'],
+            'receiver_id': message[0]['receiver_id'],
+            'group_id': message[0]['group_id'],
+            'content': message[0]['content'],
+            'sent_at': message[0]['sent_at'].strftime('%Y-%m-%dT%H:%M:%S.%f')
+        }

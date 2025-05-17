@@ -92,7 +92,6 @@ const renderFormField = (fieldSchema) => {
 
 const AdminTableManagerPage = () => {
     const { tableName } = useParams();
-    const navigate = useNavigate();
 
     const [schema, setSchema] = useState(null);
     const [data, setData] = useState([]);

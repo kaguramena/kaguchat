@@ -1,9 +1,12 @@
 # kaguchat_app/__init__.py
 from flask import Flask, session as flask_session, request, make_response # 重命名 session 防止冲突
+from flask_session import Session
 import logging
 import uuid
+
+from kaguchat_app.data.db_access import close_request_db_connection
 from .config import current_config # 使用 . 从当前包导入
-from .extensions import socketio, session_ext, jwt, chat_service, table_service, logger
+from .extensions import socketio,  jwt, chat_service, table_service, logger
 from .socket_events import register_socketio_events
 from .processors import get_table_processor as get_processor_func
 from flask_cors import CORS
@@ -14,7 +17,6 @@ def create_app(config_object=current_config):
     app.config.from_object(config_object)
 
     # 初始化扩展
-    session_ext.init_app(app)
     socketio.init_app(app) 
     jwt.init_app(app)
 
@@ -34,6 +36,7 @@ def create_app(config_object=current_config):
     # app.logger.handlers.extend(ext_logger.handlers) # 合并 handler
     # app.logger.setLevel(ext_logger.level)
 
+    app.teardown_appcontext(close_request_db_connection)
 
     # 注册蓝图
     from .routes.auth_routes import auth_bp
@@ -48,7 +51,7 @@ def create_app(config_object=current_config):
 
     # 注册 SocketIO 事件 (从 socket_events.py)
     register_socketio_events(socketio)
-
+    Session(app)
     # 头像上传文件夹
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
